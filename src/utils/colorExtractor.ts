@@ -173,7 +173,7 @@ export async function extractColorsFromImage(imageUrl: string): Promise<Extracte
           const gRounded = Math.round(g / 8) * 8;
           const bRounded = Math.round(b / 8) * 8;
           
-          const [h, s, l] = rgbToHsl(rRounded, gRounded, bRounded);
+          const [_, s, l] = rgbToHsl(rRounded, gRounded, bRounded);
           const key = `${rRounded},${gRounded},${bRounded}`;
           
           if (colorCount.has(key)) {
