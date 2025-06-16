@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
-import { usePalette } from 'react-palette';
 import { Loader2, Palette, AlertCircle } from 'lucide-react';
+import { extractColorsFromImage, ExtractedColors } from '../utils/colorExtractor';
 
 interface PaletteExtractorProps {
   imageSrc: string | null;
@@ -9,8 +9,9 @@ interface PaletteExtractorProps {
 
 export function PaletteExtractor({ imageSrc, onColorsExtracted }: PaletteExtractorProps) {
   const [isProcessing, setIsProcessing] = useState(false);
-  const [additionalColors, setAdditionalColors] = useState<string[]>([]);
-  const { data, loading, error } = usePalette(imageSrc || '');
+  const [extractedData, setExtractedData] = useState<ExtractedColors | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   // Thuật toán đơn giản để lấy thêm màu từ ảnh
   const extractAdditionalColors = (imageUrl: string): Promise<string[]> => {
@@ -75,16 +76,7 @@ export function PaletteExtractor({ imageSrc, onColorsExtracted }: PaletteExtract
     });
   };
 
-  // Khi có ảnh mới, lấy thêm màu
-  useEffect(() => {
-    if (imageSrc) {
-      setIsProcessing(true);
-      extractAdditionalColors(imageSrc).then(colors => {
-        setAdditionalColors(colors);
-        setIsProcessing(false);
-      });
-    }
-  }, [imageSrc]);
+
 
   // Hàm tính khoảng cách màu đơn giản
   const getColorDistance = (color1: string, color2: string): number => {
@@ -138,21 +130,33 @@ export function PaletteExtractor({ imageSrc, onColorsExtracted }: PaletteExtract
     return filtered;
   };
 
-  // Combine màu từ react-palette và thuật toán đơn giản
+  // Extract màu bằng thuật toán mới
   useEffect(() => {
-    if (data && !loading && !error) {
-      // Màu từ react-palette
+    if (!imageSrc) return;
+    
+    setLoading(true);
+    setError(null);
+    setIsProcessing(true);
+    
+    Promise.all([
+      extractColorsFromImage(imageSrc),
+      extractAdditionalColors(imageSrc)
+    ])
+    .then(([extracted, additional]) => {
+      setExtractedData(extracted);
+      
+      // Màu từ thuật toán chính
       const paletteColors = [
-        data.vibrant,
-        data.darkVibrant,
-        data.lightVibrant,
-        data.muted,
-        data.darkMuted,
-        data.lightMuted
+        extracted.vibrant,
+        extracted.darkVibrant,
+        extracted.lightVibrant,
+        extracted.muted,
+        extracted.darkMuted,
+        extracted.lightMuted
       ].filter((color): color is string => color !== null && color !== undefined);
 
       // Combine với màu bổ sung
-      const allColors = [...paletteColors, ...additionalColors];
+      const allColors = [...paletteColors, ...additional];
       
       // Loại bỏ trùng lặp cơ bản trước
       const basicUnique = Array.from(new Set(allColors));
@@ -164,16 +168,18 @@ export function PaletteExtractor({ imageSrc, onColorsExtracted }: PaletteExtract
         onColorsExtracted(finalColors);
       }
       
+      setLoading(false);
       setIsProcessing(false);
-    }
-  }, [data, loading, error, additionalColors, onColorsExtracted]);
+    })
+    .catch((err) => {
+      setError('Lỗi khi trích xuất màu');
+      setLoading(false);
+      setIsProcessing(false);
+      console.error('Error extracting colors:', err);
+    });
+  }, [imageSrc, onColorsExtracted]);
 
-  useEffect(() => {
-    if (error) {
-      setIsProcessing(false);
-      console.error('Error extracting palette:', error);
-    }
-  }, [error]);
+
 
   if (!imageSrc) {
     return null;
@@ -199,7 +205,7 @@ export function PaletteExtractor({ imageSrc, onColorsExtracted }: PaletteExtract
         </div>
       )}
 
-      {data && !loading && !error && (
+      {extractedData && !loading && !error && (
         <div className="flex items-center justify-center p-4 bg-green-50 dark:bg-green-950 rounded-lg border border-green-200 dark:border-green-800">
           <Palette className="w-5 h-5 text-green-600 dark:text-green-400 mr-2" />
           <span className="text-green-700 dark:text-green-300 text-sm">
