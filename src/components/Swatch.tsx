@@ -1,7 +1,5 @@
-import React from 'react';
 import { Copy, Check } from 'lucide-react';
 import { useState } from 'react';
-import { CopyToClipboard } from 'react-copy-to-clipboard';
 import { getOptimalTextColor } from '../utils/contrast';
 import { cn } from '../lib/utils';
 
@@ -31,10 +29,15 @@ export function Swatch({
     lg: 'w-32 h-32'
   };
 
-  const handleCopy = () => {
-    setCopied(true);
-    onCopy?.(color);
-    setTimeout(() => setCopied(false), 2000);
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(color);
+      setCopied(true);
+      onCopy?.(color);
+      setTimeout(() => setCopied(false), 2000);
+    } catch (err) {
+      console.error('Failed to copy color:', err);
+    }
   };
 
   return (
@@ -62,24 +65,23 @@ export function Swatch({
           </span>
         )}
         
-        <CopyToClipboard text={color} onCopy={handleCopy}>
-          <button
-            className={cn(
-              'flex items-center justify-center w-6 h-6 rounded-full',
-              'bg-white/20 hover:bg-white/30 transition-colors duration-200',
-              'border border-white/30'
-            )}
-            onClick={(e) => {
-              e.stopPropagation();
-            }}
-          >
-            {copied ? (
-              <Check className="w-3 h-3" />
-            ) : (
-              <Copy className="w-3 h-3" />
-            )}
-          </button>
-        </CopyToClipboard>
+        <button
+          className={cn(
+            'flex items-center justify-center w-6 h-6 rounded-full',
+            'bg-white/20 hover:bg-white/30 transition-colors duration-200',
+            'border border-white/30'
+          )}
+          onClick={(e) => {
+            e.stopPropagation();
+            handleCopy();
+          }}
+        >
+          {copied ? (
+            <Check className="w-3 h-3" />
+          ) : (
+            <Copy className="w-3 h-3" />
+          )}
+        </button>
       </div>
     </div>
   );

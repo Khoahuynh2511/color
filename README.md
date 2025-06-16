@@ -275,6 +275,3 @@ Dự án này sử dụng [MIT License](LICENSE).
 
 ---
 
-**Made with ❤️ by AI Assistant**
-
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/your-username/palette-generator)

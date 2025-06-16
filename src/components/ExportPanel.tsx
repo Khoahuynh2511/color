@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { Download, Copy, Check, Share, ChevronDown, Heart } from 'lucide-react';
-import { CopyToClipboard } from 'react-copy-to-clipboard';
 import { saveAs } from 'file-saver';
 import { exportToScss } from '../utils/scssExporter';
 import { exportToCssVars } from '../utils/cssVarExporter';
@@ -19,9 +18,14 @@ export function ExportPanel({ colors, onSave, className }: ExportPanelProps) {
   const [copied, setCopied] = useState<string | null>(null);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
-  const handleCopyAllHex = () => {
-    setCopied('hex');
-    setTimeout(() => setCopied(null), 2000);
+  const handleCopyAllHex = async () => {
+    try {
+      await navigator.clipboard.writeText(colors.join(', '));
+      setCopied('hex');
+      setTimeout(() => setCopied(null), 2000);
+    } catch (err) {
+      console.error('Failed to copy colors:', err);
+    }
   };
 
   const handleSave = () => {
@@ -115,21 +119,22 @@ export function ExportPanel({ colors, onSave, className }: ExportPanelProps) {
       )}
 
       {/* Copy All HEX */}
-      <CopyToClipboard text={colors.join(', ')} onCopy={handleCopyAllHex}>
-        <button className="export-button bg-secondary text-secondary-foreground hover:bg-secondary/80 px-4 py-2">
-          {copied === 'hex' ? (
-            <>
-              <Check className="w-4 h-4 mr-2" />
-              Đã sao chép!
-            </>
-          ) : (
-            <>
-              <Copy className="w-4 h-4 mr-2" />
-              Sao chép tất cả HEX
-            </>
-          )}
-        </button>
-      </CopyToClipboard>
+      <button 
+        onClick={handleCopyAllHex}
+        className="export-button bg-secondary text-secondary-foreground hover:bg-secondary/80 px-4 py-2"
+      >
+        {copied === 'hex' ? (
+          <>
+            <Check className="w-4 h-4 mr-2" />
+            Đã sao chép!
+          </>
+        ) : (
+          <>
+            <Copy className="w-4 h-4 mr-2" />
+            Sao chép tất cả HEX
+          </>
+        )}
+      </button>
 
       {/* Share URL */}
       <button

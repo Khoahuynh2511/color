@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useLocalGallery, PaletteItem } from '../hooks/useLocalGallery';
 import { Swatch } from './Swatch';
 import { Trash2, Pin, PinOff, Plus, FolderOpen, Edit2, Check, X } from 'lucide-react';
