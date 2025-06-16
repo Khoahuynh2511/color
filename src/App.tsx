@@ -17,6 +17,7 @@ function App() {
   const [finalColors, setFinalColors] = useState<string[]>([]);
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [activeTab, setActiveTab] = useState<'generator' | 'gallery'>('generator');
+  const [saveError, setSaveError] = useState<string | null>(null);
   
   const { addPalette } = useLocalGallery();
 
@@ -90,9 +91,20 @@ function App() {
   };
 
   const handleSavePalette = (colors: string[]) => {
-    addPalette(colors);
-    // Chuyển sang tab Gallery để user thấy palette vừa lưu
-    setActiveTab('gallery');
+    try {
+      setSaveError(null); // Clear previous errors
+      const result = addPalette(colors);
+      if (result) {
+        // Chuyển sang tab Gallery để user thấy palette vừa lưu
+        setActiveTab('gallery');
+      } else {
+        setSaveError('Không thể lưu palette. Vui lòng thử lại.');
+        console.error('Failed to save palette');
+      }
+    } catch (error) {
+      setSaveError('Lỗi khi lưu palette. Kiểm tra localStorage của trình duyệt.');
+      console.error('Error saving palette:', error);
+    }
   };
 
   return (
@@ -199,7 +211,7 @@ function App() {
             {/* Palette Display */}
             {finalColors.length > 0 && (
               <section>
-                <h2 className="text-lg font-semibold mb-4">3. Bảng màu đã tạo</h2>
+                <h2 className="text-lg font-semibold mb-4">3. Bảng màu chủ đạo</h2>
                 <div className="space-y-4">
                   <PaletteBoard
                     colors={finalColors}
@@ -211,6 +223,8 @@ function App() {
                   <ExportPanel 
                     colors={finalColors} 
                     onSave={handleSavePalette}
+                    saveError={saveError}
+                    onClearError={() => setSaveError(null)}
                   />
                 </div>
               </section>
@@ -229,7 +243,7 @@ function App() {
       <footer className="border-t border-border bg-muted/50 mt-16">
         <div className="container mx-auto px-4 py-6">
           <div className="text-center text-sm text-muted-foreground">
-            <p>Color Palette Generator • Tạo bởi AI • Open Source</p>
+            <p>Color Palette Generator</p>
             <p className="mt-1">Kéo thả ảnh, trích xuất màu, xuất SCSS/CSS, chia sẻ URL</p>
           </div>
         </div>

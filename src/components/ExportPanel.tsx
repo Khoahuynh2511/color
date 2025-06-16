@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Download, Copy, Check, Share, ChevronDown, Heart } from 'lucide-react';
+import { Download, Copy, Check, Share, ChevronDown, Heart, AlertCircle } from 'lucide-react';
 import { saveAs } from 'file-saver';
 import { exportToScss } from '../utils/scssExporter';
 import { exportToCssVars } from '../utils/cssVarExporter';
@@ -9,12 +9,14 @@ import { cn } from '../lib/utils';
 interface ExportPanelProps {
   colors: string[];
   onSave?: (colors: string[]) => void;
+  saveError?: string | null;
+  onClearError?: () => void;
   className?: string;
 }
 
 type ExportFormat = 'scss' | 'css' | 'json';
 
-export function ExportPanel({ colors, onSave, className }: ExportPanelProps) {
+export function ExportPanel({ colors, onSave, saveError, onClearError, className }: ExportPanelProps) {
   const [copied, setCopied] = useState<string | null>(null);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
@@ -97,26 +99,45 @@ export function ExportPanel({ colors, onSave, className }: ExportPanelProps) {
   }
 
   return (
-    <div className={cn("flex flex-wrap gap-3", className)}>
-      {/* Save to Gallery */}
-      {onSave && (
-        <button
-          onClick={handleSave}
-          className="export-button bg-pink-100 text-pink-700 dark:bg-pink-900 dark:text-pink-200 hover:bg-pink-200 dark:hover:bg-pink-800 px-4 py-2"
-        >
-          {copied === 'save' ? (
-            <>
-              <Check className="w-4 h-4 mr-2" />
-              Đã lưu!
-            </>
-          ) : (
-            <>
-              <Heart className="w-4 h-4 mr-2" />
-              Lưu vào Gallery
-            </>
+    <div className={cn("space-y-3", className)}>
+      {/* Error Message */}
+      {saveError && (
+        <div className="flex items-center justify-between p-3 bg-red-50 dark:bg-red-950 border border-red-200 dark:border-red-800 rounded-lg">
+          <div className="flex items-center">
+            <AlertCircle className="w-4 h-4 text-red-600 dark:text-red-400 mr-2" />
+            <span className="text-red-700 dark:text-red-300 text-sm">{saveError}</span>
+          </div>
+          {onClearError && (
+            <button
+              onClick={onClearError}
+              className="text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-200"
+            >
+              ✕
+            </button>
           )}
-        </button>
+        </div>
       )}
+
+      <div className="flex flex-wrap gap-3">
+        {/* Save to Gallery */}
+        {onSave && (
+          <button
+            onClick={handleSave}
+            className="export-button bg-pink-100 text-pink-700 dark:bg-pink-900 dark:text-pink-200 hover:bg-pink-200 dark:hover:bg-pink-800 px-4 py-2"
+          >
+            {copied === 'save' ? (
+              <>
+                <Check className="w-4 h-4 mr-2" />
+                Đã lưu!
+              </>
+            ) : (
+              <>
+                <Heart className="w-4 h-4 mr-2" />
+                Lưu vào Gallery
+              </>
+            )}
+          </button>
+        )}
 
       {/* Copy All HEX */}
       <button 
@@ -201,6 +222,7 @@ export function ExportPanel({ colors, onSave, className }: ExportPanelProps) {
           onClick={() => setIsDropdownOpen(false)}
         />
       )}
+      </div>
     </div>
   );
 }

@@ -29,44 +29,99 @@ function generateRandomName(): string {
   return `${adj} ${noun}`;
 }
 
+// Kiểm tra localStorage availability
+function isLocalStorageAvailable(): boolean {
+  try {
+    const test = '__localStorage_test__';
+    window.localStorage.setItem(test, test);
+    window.localStorage.removeItem(test);
+    return true;
+  } catch (e) {
+    return false;
+  }
+}
+
 export function useLocalGallery() {
   const [gallery, setGallery] = useState<PaletteItem[]>([]);
+  const [isStorageAvailable] = useState(isLocalStorageAvailable());
 
   // Load từ localStorage khi component mount
   useEffect(() => {
+    if (!isStorageAvailable) {
+      console.warn('localStorage not available, gallery will not persist');
+      return;
+    }
+
     try {
       const stored = localStorage.getItem(STORAGE_KEY);
       if (stored) {
         const parsed = JSON.parse(stored);
-        setGallery(Array.isArray(parsed) ? parsed : []);
+        if (Array.isArray(parsed)) {
+          setGallery(parsed);
+        } else {
+          console.warn('Invalid gallery data format, resetting');
+          setGallery([]);
+        }
       }
     } catch (error) {
       console.error('Error loading gallery from localStorage:', error);
       setGallery([]);
+      // Try to clear corrupted data
+      try {
+        localStorage.removeItem(STORAGE_KEY);
+      } catch (e) {
+        console.error('Failed to clear corrupted data:', e);
+      }
     }
-  }, []);
+  }, [isStorageAvailable]);
 
   // Save vào localStorage khi gallery thay đổi
   useEffect(() => {
+    if (!isStorageAvailable || gallery.length === 0 && !localStorage.getItem(STORAGE_KEY)) {
+      return; // Không save nếu localStorage không khả dụng hoặc gallery empty và chưa có data
+    }
+
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(gallery));
     } catch (error) {
       console.error('Error saving gallery to localStorage:', error);
+      // Thử xóa data cũ nếu hết storage space
+      if (error instanceof Error && error.name === 'QuotaExceededError') {
+        console.warn('Storage quota exceeded, trying to clear space');
+        try {
+          // Giữ lại chỉ 10 items gần nhất
+          const trimmedGallery = gallery.slice(0, 10);
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(trimmedGallery));
+          setGallery(trimmedGallery);
+        } catch (e) {
+          console.error('Failed to trim gallery:', e);
+        }
+      }
     }
-  }, [gallery]);
+  }, [gallery, isStorageAvailable]);
 
   // Thêm palette mới
-  const addPalette = (colors: string[], customName?: string): PaletteItem => {
-    const newItem: PaletteItem = {
-      id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
-      name: customName || generateRandomName(),
-      colors: [...colors],
-      createdAt: Date.now(),
-      pinned: false
-    };
+  const addPalette = (colors: string[], customName?: string): PaletteItem | null => {
+    try {
+      if (!colors || colors.length === 0) {
+        console.warn('Cannot add palette: no colors provided');
+        return null;
+      }
 
-    setGallery(prev => [newItem, ...prev]);
-    return newItem;
+      const newItem: PaletteItem = {
+        id: Date.now().toString() + Math.random().toString(36).substring(2, 9),
+        name: customName || generateRandomName(),
+        colors: [...colors],
+        createdAt: Date.now(),
+        pinned: false
+      };
+
+      setGallery(prev => [newItem, ...prev]);
+      return newItem;
+    } catch (error) {
+      console.error('Error adding palette:', error);
+      return null;
+    }
   };
 
   // Xóa palette

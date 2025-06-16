@@ -263,9 +263,6 @@ const extractColors = async (imageSrc: string) => {
 ## 📄 License
 
 Dự án này sử dụng [MIT License](LICENSE).
-
-## 🙏 Credits
-
 - **react-palette** - Color extraction từ ảnh
 - **chroma-js** - Color manipulation & scales
 - **@dnd-kit** - Smooth drag & drop
